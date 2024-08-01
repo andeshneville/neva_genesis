@@ -13,72 +13,52 @@
 #include "MPU6050.h"
 #include "NRF24L01.h"
 #include "flex.h"
-int sbutton = 0;
-int hbutton = 0;
+#include "Servo_motor.h"
 
-uint8_t nrf24_send_spi(uint8_t register_address, void *data, unsigned int bytes);
-uint8_t nrf24_write(uint8_t register_address, uint8_t *data, unsigned int bytes);
-uint8_t nrf24_read(uint8_t register_address, uint8_t *data, unsigned int bytes);
-void nrf24_init(void);
-void nrf24_state(uint8_t state);
-void nrf24_start_listening(void);
-unsigned int nrf24_available(void);
-const char * nrf24_read_message(void);
-uint8_t nrf24_send_message(const void *tx_message);
-void MSelect(void);
-void HSelect(void);
-void Gyro_Init();
-void Read_RawValue();
-float x_accelleration(void);
-float y_accelleration(void);
-void I2C_Init();
-char I2C_Read_Ack();
-void ADC_Init();
-int ADC_Read(char channel);
-int flex(char channel);
+volatile uint8_t sbutton = 0;
+volatile uint8_t hbutton = 0;
 
 int main(void)
 {
 	DDRB = 0xFF;		// Make PORTB as output Port 
-	DDRD &= ~(1<<PD2);  // Make PD2 pin as Input
-	DDRD &= ~(1<<PD3);  // Make PD3 pin as Input
-	PORTD = PORTD | (1<<PD2) | (1<<PD3); /* Enable pull-up on PD2 by writing 1 to it */
+	DDRD &= ~(1<<PD2);  // Make INT0 pin as Input
+	DDRD &= ~(1<<PD3);  // Make INT1 pin as Input
+	EIMSK |= (1<<INT0)|(1<<INT1); /* Enable INT0 and INT1*/ 
+	EIFR  |=(1<< INTF1)|(1<< INTF0);  /* Trigger INT0 and INT1 on Rising Edge triggered */
+	sei();		//Enable global interrupt
 	DDRC = 0x00;        /* Make ADC port as input */
 	
 	I2C_Init();
 	Gyro_Init();
 	ADC_Init();
 	nrf24_init();
-	
+	servo_init();
     /* Replace with your application code */
     while (1) 
     {
-		MSelect();
-		char msg[32];
-		memset(msg,0,32);
+		static char msg[32];
+		char str1[32];
+		char str2[32];
 		if (sbutton){
-			char str1[32]="R";
-			memset(str1,1,32);
-			char str2[32]="L";
-			memset(str2,1,32);
-			int a= y_accelleration();
-			int b= x_accelleration();
+			strcpy(str1,"R");
+			strcpy(str2,"L");
+			int a= right_motor();
+			int b= left_motor();
 			strcat(str1,a);
 			strcat(str2,b);	
 			nrf24_send_message(str1);
 			nrf24_send_message(str2);
 		}
 		else{
-			HSelect();
-			char str1[32]="A";
+			strcpy(str1,"A");
 			if (hbutton){
-				memset(str1,1,32);
+				
 				strcat(str1,flex(0));
 				nrf24_send_message(str1);
 			}
 			else{
-				char str2[32]="B";
-				memset(str2,1,32);
+				
+				strcpy(str2,"B");
 				strcat(str2,flex(1));
 				nrf24_send_message(str2);
 			}
@@ -87,20 +67,13 @@ int main(void)
     }
 	return(0);
 }
-void MSelect(void){
-	if (PD2==1){
-		sbutton=1;
-	}
-	else{
-		sbutton=0;
-	}
+ISR(INT0_vect){
+	sbutton = ~sbutton; 
+	_delay_ms(50); 
 }
-void HSelect(void){
-	if (PD3==1){
-		hbutton=1;
-	}
-	else{
-		hbutton=0;
-	}
+ISR(INT1_vect){
+	hbutton = ~hbutton;  
+	_delay_ms(50);  
 }
+
 
