@@ -13,47 +13,59 @@
 #include <avr/interrupt.h>
 #include <stdio.h>
 
+//Declarations
+void dc_init();
+void dc_init(void);
+void left_motor(int speed);
+void right_motor(int speed);
+//void motor_control(int motor, int speed);
+volatile int Direction =0;
 // Initialize PWM for motor speed control
-void initPWM() {
-	// Set Timer1 in Fast PWM mode, non-inverted output
-	TCCR0A = (1 << COM1A1) | (1 << WGM11) | (1 << WGM10);
-	TCCR0B = (1 << WGM13) | (1 << WGM12) | (1 << CS11); // Prescaler = 8
-	OCR2B = 0; // Initialize duty cycle (0% initially)
-	OCR1B = 0; // Initialize duty cycle (0% initially)
-}
+
 void dc_init(){
-	DDRD = 0xFF;  /* Make PORTD as output Port */
-	sei();   /* Enable Global Interrupt */
-	TCNT0 = 0;  /* Set timer0 count zero */
-	TCCR0A = (1<<WGM00)|(1<<WGM01)|(1<<COM0A0)|(1<<CS00)|(1<<CS01);/* Set Fast PWM with	Fosc/64 Timer0 clock */
-	TCCR0B = (1<<WGM00)|(1<<WGM01)|(1<<COM0B0)|(1<<CS00)|(1<<CS01);/* Set Fast PWM with	Fosc/64 Timer0 clock */
+	// Set motor control pins (IN1, IN2, IN3, IN4) as output
+	DDRC =0xFF;
+	DDRB |= (1 << PB2);// Set PWM pins (ENA, ENB) to output for speed control (Fast PWM mode)
+	DDRD |= (1 << PD3);
+	TCCR1A |= (1 << COM1B1) | (1 << COM1A1)|(1 << WGM11) | (1 << WGM10); // Clear OC1B on Compare Match
+	TCCR2A |= (1 << COM2B1) | (1 << COM2A1)|(1 << WGM21) | (1 << WGM20); // Clear OC1B on Compare Match
+	TCCR2B |= (1<<CS22);        // No prescaling (clk/1)
+	TCCR1B |= (1<<CS12);        // No prescaling (clk/1)
+	//Initial Motor Speeds
+	right_motor(50);
+	left_motor(120);
 }
 
-int left_motor(int speed){
+void left_motor(int speed){
 	if (speed<0){
 		int sp=0-speed;
-		DDRD &= ~(1 << PD2);
-		PORTD |= (1 << PD3);
+		PORTC &= ~(1 << PC2);
+		PORTC |= (1 << PC3);
 		OCR1B = (sp);
 	}
 	else{
-		DDRD &= ~(1 << PD3);
-		PORTD |= (1 << PD2);
+		PORTC &= ~(1 << PC3);
+		PORTC |= (1 << PC2);
 		OCR1B = (speed);
 	}
 }
-int right_motor(int speed){
+void right_motor(int speed){
 	if (speed<0){
 		int sp=0-speed;
-		DDRD &= ~(1 << PD4);
-		PORTD |= (1 << PD5);
+		PORTC &= ~(1 << PC0);
+		PORTC |= (1 << PC1);
 		OCR2B = (sp);
 	}
 	else{
-		DDRD &= ~(1 << PD5);
-		PORTD |= (1 << PD4);
+		PORTC &= ~(1 << PC1);
+		PORTC |= (1 << PC0);
 		OCR2B = (speed);
 	}
 }
+void dc_stop(){
+	OCR2B=0;
+	OCR1B=0;
+}
 
+	
 #endif /* DC_MOTOR_H_ */
