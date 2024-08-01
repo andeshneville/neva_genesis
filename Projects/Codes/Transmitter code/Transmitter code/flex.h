@@ -8,7 +8,10 @@
 
 #ifndef FLEX_H_
 #define FLEX_H_
-
+//Declarations
+void ADC_Init();
+int ADC_Read(char channel);
+int flex(char channel);
 void ADC_Init(){
 	DDRC &= ~((1 << PC0) | (1 << PC1));        /* Make ADC port as input */
 	ADCSRA = 0x87;          /* Enable ADC, with freq/128  */
