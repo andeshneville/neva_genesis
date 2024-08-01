@@ -8,23 +8,23 @@
 
 #ifndef SERVO_MOTOR_H_
 #define SERVO_MOTOR_H_
-
+void servo_init(void);
+void gripper(int position);
+void arm_joint(int position);
 
 void servo_init(void){
-	/* GPIO setup */
-	DDRB |= (1<<PB1); // Make OC1A pin as Output
-	DDRB |= (1<<PB2); // Make OC1B pin as Output
-	/* PWM setup */
-	TCCR1A = (1<<WGM00)|(1<<WGM01)|(1<<COM1A0)|(1<<CS02); // Set Fast PWM with Fosc/256Timer0 clock
-	TCCR1B = (1<<WGM00)|(1<<WGM01)|(1<<COM1B0)|(1<<CS02); // Set Fast PWM with Fosc/256Timer0 clock
-	OCR0B = 0; // Initialize duty cycle (0% initially)
-	OCR0A = 0; // Initialize duty cycle (0% initially)
+	DDRD |= (1<<PD5); // Make OC0A pin as Output
+	DDRD |= (1<<PD6); // Make OC0B pin as Output
+	// Configure OC0A and OC0B for Fast PWM, 8-bit
+	TCCR0A |= (1 << COM0A1) | (1 << COM0B1)|(1 << WGM00) | (1 << WGM01); // Clear OC0A and OC0B on Compare Match
+	TCCR0B |= (1 <<  CS01)|(1 <<   CS00);    // prescaling to 64
+	TCNT0 = 0xFF;                           // Set value to compare OCR0x to
 }
 
-int gripper(int position){
+void gripper(int position){
 	OCR0A=position;
 }
-int arm_joint(int position){
+void arm_joint(int position){
 	OCR0B=position;
 }
 
