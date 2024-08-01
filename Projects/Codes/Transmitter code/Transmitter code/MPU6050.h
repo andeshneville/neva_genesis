@@ -20,6 +20,13 @@
 #include "I2C_Master_H_file.h"	/* Include I2C Master header file */
 
 float Acc_x,Acc_y,Acc_z,Temperature,Gyro_x,Gyro_y,Gyro_z;
+//Declarations
+void Gyro_Init();
+void MPU_Start_Loc();
+void Read_RawValue();
+float x_accelleration(void);
+float y_accelleration(void);
+float direction(void);
 
 void Gyro_Init()			/* Gyro initialization function */
 {
@@ -35,7 +42,7 @@ void Gyro_Init()			/* Gyro initialization function */
 	I2C_Stop();
 
 	I2C_Start(0xD0);
-	I2C_Write(CONFIG);		/* Write to Configuration register */
+	I2C_Write(MCONFIG);		/* Write to Configuration register */
 	I2C_Write(0x00);		/* Fs = 8KHz */
 	I2C_Stop();
 
@@ -69,17 +76,21 @@ void Read_RawValue()
 	Gyro_z = (((int)I2C_Read_Ack()<<8) | (int)I2C_Read_Nack());
 	I2C_Stop();
 }
-float x_accelleration(void){
+float right_motor(void){
 	Read_RawValue();
-	int Xa;
-	Xa=Acc_x/164;	//Map -32768 to 32767 acc. values to 0-200 PWM values
-	return Xa;	
+	int Xa,Ya,speed;
+	Xa=Acc_x/328;	//Map -32768 to 32767 acc. values to 0-100 PWM values
+	Ya=Acc_y/328;	//Map -32768 to 32767 acc. values to 0-100 PWM values
+	speed=Ya-Xa;
+	return speed;	
 }
-float y_accelleration(void){
+float left_motor(void){
 	Read_RawValue();
-	int Ya;
-	Ya=Acc_y/164;  //Map -32768 to 32767 acc. values to 0-200 PWM values
-	return Ya;
+	int Ya,Xa,speed;
+	Ya=Acc_y/328;  //Map -32768 to 32767 acc. values to 0-100 PWM values
+	Xa=Acc_x/328;	//Map -32768 to 32767 acc. values to 0-100 PWM 
+	speed=Ya+Xa;
+	return speed;
 }
 float direction(void){
 	float Xg=0,Yg=0;
